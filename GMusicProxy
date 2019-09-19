@@ -85,7 +85,10 @@ class GetHandler(BaseHTTPRequestHandler):
         params = parse_qs(parsedPath.query)
 
         if parsedPath.path == '/get_song' and 'id' in params:
-            self._get_song(id=params['id'][0])
+            if 'quality' in params:
+                self._get_song(id=params['id'][0], quality=params['quality'][0])
+            else:
+                self._get_song(id=params['id'][0])
         elif parsedPath.path == '/get_all_stations':
             self._send_headers(200, 'audio/mpegurl', 'inline; filename=playlist.%s' % 'txt' if (
                 'format' in params and params['format'][0].lower().strip() == 'text') else 'm3u')
@@ -251,7 +254,7 @@ class GetHandler(BaseHTTPRequestHandler):
         metadata = (chr(len(text)) + text).ljust(len(text) * 16 + 1, chr(0))
         return metadata.encode('utf-8')
 
-    def _get_song(self, id, only_headers=False):
+    def _get_song(self, id, only_headers=False, quality='hi'):
         if config['disable_all_access'] or id[0] != 'T':
             info = None
             # this more expensive method to get track info is necessary if we can't use the All Access 'get_track_info' method or if we are using the universal (uuid-style) id (tracks in collection)
@@ -323,7 +326,7 @@ class GetHandler(BaseHTTPRequestHandler):
             tempFile.close()
             os.unlink(tempFile.name)
 
-        url = self._robust_retry(lambda: api.get_stream_url(song_id=id))
+        url = self._robust_retry(lambda: api.get_stream_url(song_id=id, quality=quality))
         logger.debug('streaming url: %s', url)
 
         do_shoutcast = config[
