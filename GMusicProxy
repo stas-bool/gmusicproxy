@@ -218,6 +218,14 @@ class GetHandler(BaseHTTPRequestHandler):
                 'Unknown command \'%s\' or missing required parameter!', parsedPath.path)
         return
 
+    def do_OPTIONS(self):
+        logger.debug('OPTIONS request path: %s', self.path)
+        parsedPath = urlparse(self.path)
+        params = parse_qs(parsedPath.query)
+        if parsedPath.path == '/get_song' and 'id' in params:
+            self._get_song(id=params['id'][0])
+        return
+
     def _send_headers(self, response_code=200, content_type=None, content_disposition=None, content_length=None, icy_metaint=None, icy_name=None):
         self.send_response(response_code)
         if content_type:
@@ -231,6 +239,8 @@ class GetHandler(BaseHTTPRequestHandler):
         if icy_name:
             self.send_header('icy-name', icy_name)
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
         self.end_headers()
 
     def _check_aa(self):
